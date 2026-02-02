@@ -3,6 +3,7 @@ import { createRoot } from "@opentui/react"
 import { useState, useEffect } from "react"
 import { Octokit } from "@octokit/rest"
 import { isAuthenticated, login, getStoredCredentials } from "./auth"
+import { getConnections, saveConnection, type Connection } from "./connections"
 import { log, logInfo } from "./logger"
 
 type AuthState = "checking" | "unauthenticated" | "authenticating" | "authenticated"
@@ -93,18 +94,79 @@ interface GitHubUser {
   name: string | null
 }
 
+function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
+  const [step, setStep] = useState<"url" | "name" | "saving">("url")
+  const [url, setUrl] = useState("")
+  const [error, setError] = useState<string | null>(null)
+
+  const handleUrlSubmit = (value: string) => {
+    if (!value.trim()) {
+      setError("URL cannot be empty")
+      return
+    }
+    if (!value.includes("://")) {
+      setError("Invalid URL format")
+      return
+    }
+    setUrl(value.trim())
+    setError(null)
+    setStep("name")
+  }
+
+  const handleNameSubmit = async (name: string) => {
+    const connectionName = name.trim() || "My Database"
+    setStep("saving")
+    try {
+      await saveConnection(connectionName, url)
+      onSaved()
+    } catch (err) {
+      setError("Failed to save connection")
+      setStep("url")
+    }
+  }
+
+  if (step === "url") {
+    return (
+      <box flexDirection="column" gap={1}>
+        <text>Enter database URL:</text>
+        <text attributes={TextAttributes.DIM}>e.g. postgresql://user:pass@localhost:5432/mydb</text>
+        {error && <text fg="#FF0000">{error}</text>}
+        <input
+          width={80}
+          focused
+          placeholder="postgresql://..."
+          onSubmit={handleUrlSubmit as any}
+        />
+      </box>
+    )
+  }
+
+  if (step === "name") {
+    return (
+      <box flexDirection="column" gap={1}>
+        <text>Connection name (optional):</text>
+        <input
+          width={30}
+          focused
+          placeholder="My Database"
+          onSubmit={handleNameSubmit as any}
+        />
+      </box>
+    )
+  }
+
+  return <text attributes={TextAttributes.DIM}>Saving...</text>
+}
+
 function MainApp() {
   const [user, setUser] = useState<GitHubUser | null>(null)
+  const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
 
-  useEffect(() => {
-    async function fetchUser() {
-      const credentials = await getStoredCredentials()
-      if (!credentials) {
-        setLoading(false)
-        return
-      }
-
+  const loadData = async () => {
+    const credentials = await getStoredCredentials()
+    if (credentials) {
       try {
         const octokit = new Octokit({ auth: credentials.token })
         const { data } = await octokit.users.getAuthenticated()
@@ -113,10 +175,15 @@ function MainApp() {
       } catch (err) {
         log("Failed to fetch user:", err)
       }
-      setLoading(false)
     }
 
-    fetchUser()
+    const conns = await getConnections()
+    setConnections(conns)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadData()
   }, [])
 
   if (loading) {
@@ -127,16 +194,46 @@ function MainApp() {
     )
   }
 
-  return (
-    <box alignItems="center" justifyContent="center" flexGrow={1}>
-      <box flexDirection="column" alignItems="center" gap={1}>
+  if (showAddForm) {
+    return (
+      <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} gap={1}>
         <ascii-font font="tiny" text="Kozani" />
-        <text fg="#00FF00">✓ Authenticated</text>
-        {user && (
-          <text attributes={TextAttributes.DIM}>
-            Logged in as @{user.login}{user.name ? ` (${user.name})` : ""}
-          </text>
+        <AddConnectionForm
+          onSaved={() => {
+            setShowAddForm(false)
+            loadData()
+          }}
+        />
+      </box>
+    )
+  }
+
+  return (
+    <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} gap={1}>
+      <ascii-font font="tiny" text="Kozani" />
+      <text fg="#00FF00">✓ Authenticated</text>
+      {user && (
+        <text attributes={TextAttributes.DIM}>
+          Logged in as @{user.login}{user.name ? ` (${user.name})` : ""}
+        </text>
+      )}
+      
+      <box flexDirection="column" marginTop={1} gap={1}>
+        <text attributes={TextAttributes.BOLD}>Connections:</text>
+        {connections.length === 0 ? (
+          <text attributes={TextAttributes.DIM}>No connections yet</text>
+        ) : (
+          connections.map((conn) => (
+            <text key={conn.id}>• {conn.name}</text>
+          ))
         )}
+        <text> </text>
+        <text attributes={TextAttributes.DIM}>Press Enter to add a connection</text>
+        <input
+          width={1}
+          focused
+          onSubmit={() => setShowAddForm(true)}
+        />
       </box>
     </box>
   )
