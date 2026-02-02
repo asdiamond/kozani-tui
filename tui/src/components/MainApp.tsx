@@ -4,6 +4,7 @@ import { useKeyboard } from "@opentui/react"
 import { useEffect, useMemo, useState } from "react"
 import { useAppData } from "../hooks/useAppData"
 import { AddConnectionForm } from "./AddConnectionForm"
+import { ConnectionPage } from "./ConnectionPage"
 import { LoadingScreen } from "./LoadingScreen"
 import { Logo } from "./Logo"
 import { deleteConnection } from "../connections"
@@ -101,19 +102,7 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
 
   if (selectedConnection) {
     return (
-      <box flexDirection="column" flexGrow={1} padding={1} gap={1}>
-        <box alignItems="center" justifyContent="space-between">
-          <text attributes={TextAttributes.BOLD}>{selectedConnection.name}</text>
-          <text attributes={TextAttributes.DIM}>q to go back, l to logout</text>
-        </box>
-        <box flexDirection="column" gap={1} flexGrow={1}>
-          <text attributes={TextAttributes.DIM}>Connection URL:</text>
-          <text selectable>{selectedConnection.url}</text>
-          <text> </text>
-          <text attributes={TextAttributes.DIM}>Created:</text>
-          <text>{new Date(selectedConnection.createdAt).toLocaleString()}</text>
-        </box>
-      </box>
+      <ConnectionPage connection={selectedConnection} onBackHint="q to go back, l to logout" />
     )
   }
 
