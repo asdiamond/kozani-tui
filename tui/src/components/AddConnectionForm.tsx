@@ -1,13 +1,29 @@
 import { TextAttributes } from "@opentui/core"
+import { useKeyboard } from "@opentui/react"
 import { useState } from "react"
 import { saveConnection } from "../connections"
 
-export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
+export function AddConnectionForm({
+  onSaved,
+  onCancel,
+}: {
+  onSaved: () => void
+  onCancel: () => void
+}) {
   const [step, setStep] = useState<"url" | "name" | "saving">("url")
   const [url, setUrl] = useState("")
   const [urlInput, setUrlInput] = useState("")
   const [nameInput, setNameInput] = useState("")
   const [error, setError] = useState<string | null>(null)
+
+  useKeyboard((key) => {
+    if (step === "saving") {
+      return
+    }
+    if (key.name === "escape" || key.name === "q") {
+      onCancel()
+    }
+  })
 
   const handleUrlSubmit = () => {
     const value = urlInput
@@ -59,6 +75,7 @@ export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
           }}
           onSubmit={handleUrlSubmit}
         />
+        <text attributes={TextAttributes.DIM}>Press q or Esc to go back</text>
       </box>
     )
   }
@@ -74,6 +91,7 @@ export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
           onInput={setNameInput}
           onSubmit={handleNameSubmit}
         />
+        <text attributes={TextAttributes.DIM}>Press q or Esc to go back</text>
       </box>
     )
   }

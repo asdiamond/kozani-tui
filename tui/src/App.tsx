@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { isAuthenticated } from "./auth"
+import { isAuthenticated, logout } from "./auth"
 import { LoginScreen } from "./components/LoginScreen"
 import { LoadingScreen } from "./components/LoadingScreen"
 import { MainApp } from "./components/MainApp"
@@ -26,5 +26,14 @@ export function App() {
     return <LoginScreen onLoginSuccess={() => setAuthState("authenticated")} />
   }
 
-  return <MainApp />
+  return (
+    <MainApp
+      onLogout={() => {
+        void (async () => {
+          await logout()
+          setAuthState("unauthenticated")
+        })()
+      }}
+    />
+  )
 }

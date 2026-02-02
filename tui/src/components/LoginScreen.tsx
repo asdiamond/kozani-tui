@@ -1,6 +1,7 @@
 import { TextAttributes } from "@opentui/core"
 import { useEffect, useState } from "react"
 import { login } from "../auth"
+import { Logo } from "./Logo"
 import { log, logInfo } from "../logger"
 
 interface VerificationInfo {
@@ -36,8 +37,8 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
 
   if (state === "idle") {
     return (
-      <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1}>
-        <ascii-font font="tiny" text="Kozani" />
+      <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} gap={1}>
+        <Logo />
         <text attributes={TextAttributes.DIM}>Press Enter to login with GitHub</text>
         <input
           width={1}
@@ -54,7 +55,7 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
   if (state === "waiting" && verification) {
     return (
       <box flexDirection="column" alignItems="center" justifyContent="center" flexGrow={1} gap={1}>
-        <ascii-font font="tiny" text="Kozani" />
+        <Logo />
         <box flexDirection="column" alignItems="center" gap={1}>
           <text>Open this URL in your browser:</text>
           <text fg="#00FFFF" selectable>
