@@ -5,9 +5,12 @@ import { saveConnection } from "../connections"
 export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
   const [step, setStep] = useState<"url" | "name" | "saving">("url")
   const [url, setUrl] = useState("")
+  const [urlInput, setUrlInput] = useState("")
+  const [nameInput, setNameInput] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  const handleUrlSubmit = (value: string) => {
+  const handleUrlSubmit = () => {
+    const value = urlInput
     if (!value.trim()) {
       setError("URL cannot be empty")
       return
@@ -21,16 +24,19 @@ export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
     setStep("name")
   }
 
-  const handleNameSubmit = async (name: string) => {
+  const handleNameSubmit = () => {
+    const name = nameInput
     const connectionName = name.trim() || "My Database"
     setStep("saving")
-    try {
-      await saveConnection(connectionName, url)
-      onSaved()
-    } catch {
-      setError("Failed to save connection")
-      setStep("url")
-    }
+    void (async () => {
+      try {
+        await saveConnection(connectionName, url)
+        onSaved()
+      } catch {
+        setError("Failed to save connection")
+        setStep("url")
+      }
+    })()
   }
 
   if (step === "url") {
@@ -45,6 +51,12 @@ export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
           width={80}
           focused
           placeholder="postgresql://..."
+          onInput={(value) => {
+            setUrlInput(value)
+            if (error) {
+              setError(null)
+            }
+          }}
           onSubmit={handleUrlSubmit}
         />
       </box>
@@ -55,7 +67,13 @@ export function AddConnectionForm({ onSaved }: { onSaved: () => void }) {
     return (
       <box flexDirection="column" gap={1}>
         <text>Connection name (optional):</text>
-        <input width={30} focused placeholder="My Database" onSubmit={handleNameSubmit} />
+        <input
+          width={30}
+          focused
+          placeholder="My Database"
+          onInput={setNameInput}
+          onSubmit={handleNameSubmit}
+        />
       </box>
     )
   }

@@ -42,8 +42,8 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
         <input
           width={1}
           focused
-          onSubmit={(value: string) => {
-            log("onSubmit triggered! value:", value)
+          onSubmit={() => {
+            log("onSubmit triggered!")
             startLogin()
           }}
         />
