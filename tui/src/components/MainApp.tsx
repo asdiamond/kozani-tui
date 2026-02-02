@@ -1,10 +1,11 @@
 import { TextAttributes } from "@opentui/core"
 import type { SelectOption } from "@opentui/core"
-import { useKeyboard } from "@opentui/react"
 import { useEffect, useMemo, useState } from "react"
 import { useAppData } from "../hooks/useAppData"
+import { useConnectionListKeys } from "../hooks/useConnectionListKeys"
 import { AddConnectionForm } from "./AddConnectionForm"
 import { ConnectionPage } from "./ConnectionPage.tsx"
+import { ConnectionsList } from "./ConnectionsList"
 import { LoadingScreen } from "./LoadingScreen"
 import { Logo } from "./Logo"
 import { deleteConnection } from "../connections"
@@ -48,41 +49,18 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
     })()
   }
 
-  useKeyboard((key) => {
-    if (showAddForm) {
-      return
-    }
-
-    if (selectedConnection) {
-      if (schemaBrowserOpen) {
-        return
-      }
-      if (key.name === "q" || key.name === "escape") {
-        setSelectedConnectionId(null)
-      }
-      if (key.ctrl && key.name === "l") {
-        onLogout()
-      }
-      return
-    }
-
-    if (key.name === "j") {
-      setSelectedIndex((prev) => Math.min(prev + 1, Math.max(options.length - 1, 0)))
-    } else if (key.name === "k") {
-      setSelectedIndex((prev) => Math.max(prev - 1, 0))
-    } else if (key.name === "g") {
-      setSelectedIndex(0)
-    } else if (key.name === "G") {
-      setSelectedIndex(Math.max(options.length - 1, 0))
-    } else if (key.name === "return" && options.length > 0) {
-      setSelectedConnectionId(options[selectedIndex]?.value ?? null)
-    } else if (key.name === "a") {
-      setShowAddForm(true)
-    } else if (key.name === "d") {
-      handleDelete()
-    } else if (key.ctrl && key.name === "l") {
-      onLogout()
-    }
+  useConnectionListKeys({
+    disabled: showAddForm,
+    inConnection: !!selectedConnection,
+    schemaBrowserOpen,
+    selectedIndex,
+    optionsLength: options.length,
+    setSelectedIndex,
+    onOpenSelected: () => setSelectedConnectionId(options[selectedIndex]?.value ?? null),
+    onAdd: () => setShowAddForm(true),
+    onDelete: handleDelete,
+    onLogout,
+    onBack: () => setSelectedConnectionId(null),
   })
 
   if (loading) {
@@ -126,28 +104,13 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
           {user.name ? ` (${user.name})` : ""}
         </text>
       )}
-      <box flexDirection="column" marginTop={1} gap={1} width={80}>
-        <text attributes={TextAttributes.BOLD}>Connections:</text>
-        {connections.length === 0 ? (
-          <text attributes={TextAttributes.DIM}>No connections yet. Press a to add one.</text>
-        ) : (
-          <select
-            style={{ height: 10 }}
-            options={options}
-            selectedIndex={selectedIndex}
-            focused
-            onChange={(index) => setSelectedIndex(index)}
-            onSelect={(index, option) => {
-              setSelectedIndex(index)
-              setSelectedConnectionId((option?.value as string | undefined) ?? null)
-            }}
-          />
-        )}
-        <text attributes={TextAttributes.DIM}>
-          j/k to move, Enter to select, a to add, d to delete
-        </text>
-        <text attributes={TextAttributes.DIM}>ctrl+l to logout</text>
-      </box>
+      <ConnectionsList
+        connections={connections}
+        options={options}
+        selectedIndex={selectedIndex}
+        onChangeIndex={setSelectedIndex}
+        onSelectOption={setSelectedConnectionId}
+      />
     </box>
   )
 }
