@@ -1,6 +1,7 @@
 import { createCliRenderer, TextAttributes } from "@opentui/core"
 import { createRoot } from "@opentui/react"
 import { useState, useEffect } from "react"
+import { Octokit } from "@octokit/rest"
 import { isAuthenticated, login, getStoredCredentials } from "./auth"
 import { log, logInfo } from "./logger"
 
@@ -87,13 +88,55 @@ function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) {
   )
 }
 
+interface GitHubUser {
+  login: string
+  name: string | null
+}
+
 function MainApp() {
+  const [user, setUser] = useState<GitHubUser | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchUser() {
+      const credentials = await getStoredCredentials()
+      if (!credentials) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const octokit = new Octokit({ auth: credentials.token })
+        const { data } = await octokit.users.getAuthenticated()
+        setUser({ login: data.login, name: data.name })
+        logInfo("Fetched user:", data.login)
+      } catch (err) {
+        log("Failed to fetch user:", err)
+      }
+      setLoading(false)
+    }
+
+    fetchUser()
+  }, [])
+
+  if (loading) {
+    return (
+      <box alignItems="center" justifyContent="center" flexGrow={1}>
+        <text attributes={TextAttributes.DIM}>Loading...</text>
+      </box>
+    )
+  }
+
   return (
     <box alignItems="center" justifyContent="center" flexGrow={1}>
       <box flexDirection="column" alignItems="center" gap={1}>
         <ascii-font font="tiny" text="Kozani" />
         <text fg="#00FF00">✓ Authenticated</text>
-        <text attributes={TextAttributes.DIM}>Welcome! You're logged in.</text>
+        {user && (
+          <text attributes={TextAttributes.DIM}>
+            Logged in as @{user.login}{user.name ? ` (${user.name})` : ""}
+          </text>
+        )}
       </box>
     </box>
   )
