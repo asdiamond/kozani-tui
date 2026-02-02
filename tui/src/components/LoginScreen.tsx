@@ -58,12 +58,20 @@ export function LoginScreen({ onLoginSuccess }: { onLoginSuccess: () => void }) 
         <Logo />
         <box flexDirection="column" alignItems="center" gap={1}>
           <text>Open this URL in your browser:</text>
-          <text fg="#00FFFF" selectable>
-            {verification.verificationUri}
+          <text selectable>
+            <a href={verification.verificationUri} fg="#00FFFF">
+              {verification.verificationUri}
+            </a>
           </text>
           <text> </text>
           <text>And enter this code:</text>
-          <text fg="#00FF00" attributes={TextAttributes.BOLD} selectable>
+          <text
+            fg="#00FF00"
+            attributes={TextAttributes.BOLD}
+            selectable
+            selectionBg="#3a3a3a"
+            selectionFg="#ffffff"
+          >
             {verification.userCode}
           </text>
           <text> </text>
