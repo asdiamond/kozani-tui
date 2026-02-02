@@ -1,12 +1,12 @@
 import { createOAuthDeviceAuth } from "@octokit/auth-oauth-device"
 import { homedir } from "os"
 import { join } from "path"
-import { mkdir, readFile, writeFile, unlink } from "fs/promises"
+import { mkdir, readFile, writeFile, unlink, chmod } from "fs/promises"
 import { log, logError, logInfo } from "./logger"
 
 const GITHUB_CLIENT_ID = "Ov23liUaGKjbJU8RGoM9"
 
-const CONFIG_DIR = join(homedir(), ".config", "kozani")
+export const CONFIG_DIR = join(homedir(), ".kozani")
 const CREDENTIALS_FILE = join(CONFIG_DIR, "credentials.json")
 
 interface Credentials {
@@ -34,8 +34,9 @@ export async function getStoredCredentials(): Promise<Credentials | null> {
 }
 
 async function saveCredentials(credentials: Credentials): Promise<void> {
-  await mkdir(CONFIG_DIR, { recursive: true })
+  await mkdir(CONFIG_DIR, { recursive: true, mode: 0o700 })
   await writeFile(CREDENTIALS_FILE, JSON.stringify(credentials, null, 2))
+  await chmod(CREDENTIALS_FILE, 0o600)
 }
 
 export async function logout(): Promise<void> {
