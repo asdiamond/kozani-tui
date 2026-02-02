@@ -13,6 +13,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@octokit/auth-oauth-device": "^8.0.3",
     "@opentui/core": "^0.1.75",
     "@opentui/react": "^0.1.75",
     "react": "^19.2.3"
