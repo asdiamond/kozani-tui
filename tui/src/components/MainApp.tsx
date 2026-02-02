@@ -1,11 +1,12 @@
 import { TextAttributes } from "@opentui/core"
 import type { SelectOption } from "@opentui/core"
 import { useKeyboard } from "@opentui/react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useAppData } from "../hooks/useAppData"
 import { AddConnectionForm } from "./AddConnectionForm"
 import { LoadingScreen } from "./LoadingScreen"
 import { Logo } from "./Logo"
+import { deleteConnection } from "../connections"
 
 export function MainApp({ onLogout }: { onLogout: () => void }) {
   const { user, connections, loading, reload } = useAppData()
@@ -25,6 +26,25 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
 
   const selectedConnection =
     selectedConnectionId ? connections.find((conn) => conn.id === selectedConnectionId) : null
+
+  useEffect(() => {
+    if (connections.length === 0) {
+      setSelectedIndex(0)
+      return
+    }
+    setSelectedIndex((prev) => Math.min(prev, connections.length - 1))
+  }, [connections])
+
+  const handleDelete = () => {
+    const id = options[selectedIndex]?.value as string | undefined
+    if (!id) {
+      return
+    }
+    void (async () => {
+      await deleteConnection(id)
+      await reload()
+    })()
+  }
 
   useKeyboard((key) => {
     if (showAddForm) {
@@ -53,6 +73,8 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
       setSelectedConnectionId(options[selectedIndex]?.value ?? null)
     } else if (key.name === "a") {
       setShowAddForm(true)
+    } else if (key.name === "d") {
+      handleDelete()
     } else if (key.name === "l") {
       onLogout()
     }
@@ -123,7 +145,7 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
           />
         )}
         <text attributes={TextAttributes.DIM}>
-          j/k to move, Enter to select, a to add
+          j/k to move, Enter to select, a to add, d to delete
         </text>
         <text attributes={TextAttributes.DIM}>l to logout</text>
       </box>
