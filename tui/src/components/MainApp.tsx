@@ -4,7 +4,7 @@ import { useKeyboard } from "@opentui/react"
 import { useEffect, useMemo, useState } from "react"
 import { useAppData } from "../hooks/useAppData"
 import { AddConnectionForm } from "./AddConnectionForm"
-import { ConnectionPage } from "./ConnectionPage"
+import { ConnectionPage } from "./ConnectionPage.tsx"
 import { LoadingScreen } from "./LoadingScreen"
 import { Logo } from "./Logo"
 import { deleteConnection } from "../connections"
@@ -14,6 +14,7 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null)
+  const [schemaBrowserOpen, setSchemaBrowserOpen] = useState(false)
 
   const options = useMemo<SelectOption[]>(
     () =>
@@ -53,10 +54,13 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
     }
 
     if (selectedConnection) {
+      if (schemaBrowserOpen) {
+        return
+      }
       if (key.name === "q" || key.name === "escape") {
         setSelectedConnectionId(null)
       }
-      if (key.name === "l") {
+      if (key.ctrl && key.name === "l") {
         onLogout()
       }
       return
@@ -76,7 +80,7 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
       setShowAddForm(true)
     } else if (key.name === "d") {
       handleDelete()
-    } else if (key.name === "l") {
+    } else if (key.ctrl && key.name === "l") {
       onLogout()
     }
   })
@@ -102,7 +106,13 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
 
   if (selectedConnection) {
     return (
-      <ConnectionPage connection={selectedConnection} onBackHint="q to go back, l to logout" />
+      <ConnectionPage
+        connection={selectedConnection}
+        onBackHint={
+          "<q> back  <ctrl+l> logout  <s> schema browser  <j>/<k> move  <enter> toggle"
+        }
+        onSchemaBrowserToggle={setSchemaBrowserOpen}
+      />
     )
   }
 
@@ -136,7 +146,7 @@ export function MainApp({ onLogout }: { onLogout: () => void }) {
         <text attributes={TextAttributes.DIM}>
           j/k to move, Enter to select, a to add, d to delete
         </text>
-        <text attributes={TextAttributes.DIM}>l to logout</text>
+        <text attributes={TextAttributes.DIM}>ctrl+l to logout</text>
       </box>
     </box>
   )

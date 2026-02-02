@@ -3,6 +3,7 @@ import { useKeyboard } from "@opentui/react"
 import { useEffect, useMemo, useState } from "react"
 import { Client } from "pg"
 import type { Connection } from "../connections"
+import { Logo } from "./Logo"
 
 type SchemaData = Array<{
   name: string
@@ -24,10 +25,27 @@ type TreeRow = {
 export function ConnectionPage({
   connection,
   onBackHint,
+  onSchemaBrowserToggle,
 }: {
   connection: Connection
   onBackHint: string
+  onSchemaBrowserToggle?: (open: boolean) => void
 }) {
+  const parsedUrl = useMemo(() => {
+    try {
+      return new URL(connection.url)
+    } catch {
+      return null
+    }
+  }, [connection.url])
+
+  const connectionMeta = useMemo(() => {
+    const user = parsedUrl?.username || "unknown"
+    const host = parsedUrl?.hostname || "unknown"
+    const createdAt = new Date(connection.createdAt).toLocaleString()
+    return { user, host, createdAt }
+  }, [connection.createdAt, parsedUrl])
+
   const [schemaData, setSchemaData] = useState<SchemaData | null>(null)
   const [schemaError, setSchemaError] = useState<string | null>(null)
   const [showSchemaBrowser, setShowSchemaBrowser] = useState(false)
@@ -234,37 +252,58 @@ export function ConnectionPage({
     )
   }, [schemaData, schemaError, selectedIndex, treeRows])
 
+  useEffect(() => {
+    onSchemaBrowserToggle?.(showSchemaBrowser)
+    return () => {
+      onSchemaBrowserToggle?.(false)
+    }
+  }, [onSchemaBrowserToggle, showSchemaBrowser])
+
   useKeyboard((key) => {
     if (!showSchemaBrowser) {
       if (key.name === "s") {
+        key.preventDefault()
+        key.stopPropagation()
         setShowSchemaBrowser(true)
       }
       return
     }
 
     if (key.name === "q" || key.name === "escape") {
+      key.preventDefault()
+      key.stopPropagation()
       setShowSchemaBrowser(false)
       return
     }
 
     if (key.name === "j") {
+      key.preventDefault()
+      key.stopPropagation()
       setSelectedIndex((prev) => Math.min(prev + 1, Math.max(treeRows.length - 1, 0)))
       return
     }
     if (key.name === "k") {
+      key.preventDefault()
+      key.stopPropagation()
       setSelectedIndex((prev) => Math.max(prev - 1, 0))
       return
     }
     if (key.name === "g") {
+      key.preventDefault()
+      key.stopPropagation()
       setSelectedIndex(0)
       return
     }
     if (key.name === "G") {
+      key.preventDefault()
+      key.stopPropagation()
       setSelectedIndex(Math.max(treeRows.length - 1, 0))
       return
     }
 
     if (key.name === "return") {
+      key.preventDefault()
+      key.stopPropagation()
       const row = treeRows[selectedIndex]
       if (!row) {
         return
@@ -296,28 +335,57 @@ export function ConnectionPage({
 
   return (
     <box flexDirection="column" flexGrow={1} padding={1} gap={1}>
-      <box alignItems="center" justifyContent="space-between">
-        <text attributes={TextAttributes.BOLD}>{connection.name}</text>
-        <text attributes={TextAttributes.DIM}>{onBackHint}</text>
+      <box flexDirection="row" justifyContent="space-between" alignItems="flex-start">
+        <box flexDirection="column" gap={0}>
+          <text attributes={TextAttributes.BOLD}>{connection.name}</text>
+          <text fg="#f4a261">user: {connectionMeta.user}</text>
+          <text fg="#f4a261">host: {connectionMeta.host}</text>
+          <text fg="#f4a261">created_at: {connectionMeta.createdAt}</text>
+        <text attributes={TextAttributes.DIM}>
+          {onBackHint.split(/(\<[^>]+\>)/g).map((chunk, idx) => {
+            if (chunk.startsWith("<") && chunk.endsWith(">")) {
+              return (
+                <span key={`${chunk}-${idx}`} fg="#7aa2f7">
+                  {chunk}
+                </span>
+              )
+            }
+            return chunk
+          })}
+        </text>
+          {showSchemaBrowser ? (
+            <text attributes={TextAttributes.DIM}>
+              <span fg="#7aa2f7">&lt;j&gt;</span> up{"  "}
+              <span fg="#7aa2f7">&lt;k&gt;</span> down{"  "}
+              <span fg="#7aa2f7">&lt;enter&gt;</span> toggle{"  "}
+              <span fg="#7aa2f7">&lt;q&gt;</span> close
+            </text>
+          ) : (
+            <text attributes={TextAttributes.DIM}>
+              <span fg="#7aa2f7">&lt;s&gt;</span> schema browser
+            </text>
+          )}
+        </box>
+        <Logo />
       </box>
-      {showSchemaBrowser ? (
-        <box flexDirection="column" gap={1} flexGrow={1}>
-          <text attributes={TextAttributes.DIM}>
-            Schema browser — j/k move, Enter toggle, q to close
-          </text>
-          {schemaBrowserContent}
-        </box>
-      ) : (
-        <box flexDirection="column" gap={1} flexGrow={1}>
-          <text attributes={TextAttributes.DIM}>Connection URL:</text>
-          <text selectable>{connection.url}</text>
-          <text> </text>
-          <text attributes={TextAttributes.DIM}>Created:</text>
-          <text>{new Date(connection.createdAt).toLocaleString()}</text>
-          <text> </text>
-          <text attributes={TextAttributes.DIM}>Press s to browse schema</text>
-        </box>
-      )}
+      <box
+        flexDirection="column"
+        flexGrow={1}
+        border
+        borderStyle="single"
+        borderColor="#2f7dd1"
+        padding={1}
+      >
+        {showSchemaBrowser ? (
+          <box flexDirection="column" gap={1} flexGrow={1}>
+            {schemaBrowserContent}
+          </box>
+        ) : (
+          <box flexDirection="column" gap={1} flexGrow={1}>
+          <text attributes={TextAttributes.DIM}>No content yet.</text>
+          </box>
+        )}
+      </box>
     </box>
   )
 }
